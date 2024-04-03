@@ -22,11 +22,6 @@ resource "time_sleep" "wait_30_seconds" {
   create_duration = "30s"
 }
 
-locals {
-  backup_configuration = length(var.backup_configuration) > 0 ? [var.backup_configuration] : []
-}
-
-
 resource "google_sql_database_instance" "primary" {
   name                = var.gcp_pg_name_primary
   database_version    = var.gcp_pg_database_version
@@ -45,25 +40,15 @@ resource "google_sql_database_instance" "primary" {
       }
     }
 
-    dynamic "backup_configuration" {
-      for_each = local.backup_configuration
+    dynamic "insights_config" {
+      for_each = var.insights_config != null ? [var.insights_config] : []
 
       content {
-        enabled                        = try(backup_configuration.value.enabled, null)
-        binary_log_enabled             = try(backup_configuration.value.binary_log_enabled, null)
-        start_time                     = try(backup_configuration.value.start_time, null)
-        point_in_time_recovery_enabled = try(backup_configuration.value.point_in_time_recovery_enabled, null)
-        location                       = try(backup_configuration.value.location, null)
-        transaction_log_retention_days = try(backup_configuration.value.transaction_log_retention_days, null)
-
-        dynamic "backup_retention_settings" {
-          for_each = try(backup_configuration.value.backup_retention_settings, [])
-
-          content {
-            retained_backups = try(backup_retention_settings.value.retained_backups, null)
-            retention_unit   = try(backup_retention_settings.value.retention_unit, "COUNT")
-          }
-        }
+        query_insights_enabled  = true
+        query_plans_per_minute  = lookup(insights_config.value, "query_plans_per_minute", 5)
+        query_string_length     = lookup(insights_config.value, "query_string_length", 1024)
+        record_application_tags = lookup(insights_config.value, "record_application_tags", false)
+        record_client_address   = lookup(insights_config.value, "record_client_address", false)
       }
     }
   }

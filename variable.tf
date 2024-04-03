@@ -27,17 +27,13 @@ variable "gcp_pg_tier" {
   default = "db-f1-micro"
 }
 
-
-variable "backup_configuration" {
-  description = "List of backup configurations."
-  type        = any
-  default = {
-    enabled                        = true
-    start_time                     = "00:00"
-    binary_log_enabled             = false
-    point_in_time_recovery_enabled = true
-    transaction_log_retention_days = 2
-    retained_backups               = 7
-    retention_unit                 = "COUNT"
-  }
+variable "insights_config" {
+  description = "The insights_config settings for the database."
+  type = object({
+    query_plans_per_minute  = optional(number, 5)
+    query_string_length     = optional(number, 1024)
+    record_application_tags = optional(bool, false)
+    record_client_address   = optional(bool, false)
+  })
+  default = null
 }
